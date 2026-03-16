@@ -6,7 +6,7 @@ Uses openssl CLI for AES-128-CBC. Runs on OpenWrt/aarch64 routers.
 Usage:
   python3 bl_send.py power_on
   python3 bl_send.py power_off
-  python3 bl_send.py --ip 192.168.8.221 --codes /path/to/ir_codes.json power_on
+  python3 bl_send.py --ip 192.168.1.100 --codes /path/to/ir_codes.json power_on
 """
 import socket, struct, json, base64, subprocess, sys, os, time, random
 
