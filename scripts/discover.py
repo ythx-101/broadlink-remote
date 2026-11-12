@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 BroadLink device discovery and pairing script.
-Run on router via cmd-queue mechanism.
 
 Usage:
     python3 scripts/discover.py
@@ -35,15 +34,15 @@ def discover_devices(timeout=5):
             # Try to authenticate
             try:
                 d.auth()
-                print(f"[+] Device authenticated: {d.host}")
+                print(f"[+] Device authenticated: {d.host[0]}")
             except Exception as e:
-                print(f"[!] Auth failed for {d.host}: {e}")
+                print(f"[!] Auth failed for {d.host[0]}: {e}")
                 continue
             
             info = {
                 "devtype": d.devtype,
-                "ip": d.host,
-                "mac": d.mac.hex() if hasattr(d.mac, 'hex') else d.mac.hex(),
+                "ip": d.host[0],
+                "mac": d.mac.hex(),
                 "name": getattr(d, 'name', 'Unknown')
             }
             discovered.append(info)

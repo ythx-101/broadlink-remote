@@ -1,12 +1,14 @@
 # BroadLink Remote — 红外万能遥控 skill
 
+English: see README.md
+
 用 BroadLink RM4 Mini 通过红外控制空调、电视、风扇等任何红外设备。
 
 **不需要官方 APP**，全程脚本搞定。
 
 ## 你需要什么
 
-- **BroadLink RM4 Mini**（~60 块，淘宝/京东）
+- **BroadLink RM4 Mini**（淘宝/京东可购）
 - 一台能跑 Python 的电脑（配网用，只需一次）
 - 你家的 WiFi 名称和密码
 
@@ -105,7 +107,7 @@ bash scripts/ac.sh off
 | `scripts/ac_control.py` | 完整控制脚本（学习 + 发送，需 `broadlink` 库） |
 | `scripts/bl_send.py` | 零依赖发送器（用 `openssl` CLI 做加密，适合路由器） |
 | `scripts/tcl_send.py` | TCL 协议红外码生成器（字节 → 脉冲 → Broadlink 格式） |
-| `scripts/tcl_ir_analysis.py` | TCL112AC 完整协议分析（529 行） |
+| `scripts/tcl_ir_analysis.py` | TCL112AC 完整协议分析 |
 | `scripts/ac.sh` | SSH 远程调用入口 |
 | `data/ir_codes.json` | 红外码存储 |
 

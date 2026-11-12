@@ -8,13 +8,25 @@ Usage:
   python3 bl_send.py power_off
   python3 bl_send.py --ip 192.168.1.100 --codes /path/to/ir_codes.json power_on
 """
-import socket, struct, json, base64, subprocess, sys, os, time, random
+import socket, struct, json, base64, subprocess, sys, os, time, random, re
 
 DEVICE_IP = os.environ.get("BL_IP", "192.168.1.100")
 DEVICE_PORT = 80
 INIT_KEY = bytes.fromhex("097628343fe99e23765c1513accf8b02")
 INIT_IV  = bytes.fromhex("562e17996d093d28ddb3ba695a2e6f58")
 TIMEOUT  = 5
+
+def decode_ir(code):
+    """Decode an IR code string that is either hex or base64 into bytes.
+
+    Broadlink IR data starts with 0x26, so its base64 form starts with "Jg"
+    and is never mistaken for hex.
+    """
+    code = "".join(code.split())
+    if len(code) % 2 == 0 and re.fullmatch(r"[0-9a-fA-F]+", code):
+        return bytes.fromhex(code)
+    return base64.b64decode(code)
+
 
 class BroadlinkDevice:
     def __init__(self, ip, port=80):
@@ -171,12 +183,13 @@ def main():
     if not codes_path or not os.path.exists(codes_path):
         print(f"ERROR: ir_codes.json not found"); sys.exit(1)
 
-    codes = json.load(open(codes_path))
+    with open(codes_path) as f:
+        codes = json.load(f)
     if args.action not in codes:
         print(f"ERROR: '{args.action}' not in codes. Available: {list(codes.keys())}")
         sys.exit(1)
 
-    ir_data = base64.b64decode(codes[args.action])
+    ir_data = decode_ir(codes[args.action])
 
     dev = BroadlinkDevice(args.ip)
     dev.discover_and_auth()

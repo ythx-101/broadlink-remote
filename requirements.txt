@@ -1,0 +1,3 @@
+# Needed by wifi_setup.py, discover.py and ac_control.py.
+# scripts/bl_send.py does NOT need this (it only uses python3 + the openssl CLI).
+broadlink>=0.19,<0.20

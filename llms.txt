@@ -1,0 +1,34 @@
+# broadlink-remote
+
+> Python CLI scripts to control air conditioners, TVs and other infrared devices through a BroadLink RM4 Mini, without the BroadLink app or a cloud account.
+> 中文：BroadLink 博联 RM4 Mini 红外万能遥控脚本，免 App 配网，学习或计算红外码，命令行控制空调，支持 OpenWrt 路由器和 AI agent（OpenClaw）。
+
+## Two ways to get IR codes
+- Learn: point your remote at the RM4 and run `ac_control.py learn <name>`. Try this first; works for most remotes.
+- Calculate: when learning fails (signal too long or complex), build the code from the AC protocol bytes (see IRremoteESP8266) with `encode_broadlink()` in `tcl_send.py`.
+
+## Two senders
+- `scripts/ac_control.py`: discover, learn and send; needs `pip install broadlink` (PC / Raspberry Pi).
+- `scripts/bl_send.py`: send only; needs just python3 and the `openssl` CLI, so it can run on OpenWrt routers. Accepts hex or base64 codes.
+
+## Scripts
+- `scripts/wifi_setup.py`: set up the device's WiFi without the official app
+- `scripts/discover.py`: find the device on the LAN and save its info
+- `scripts/ac_control.py`: learn and send IR codes, AC shortcuts (on/off/temp/mode)
+- `scripts/bl_send.py`: zero-dependency sender
+- `scripts/ac.sh`: call the router-side sender over SSH
+- `scripts/tcl_send.py`: TCL AC code candidates generated from protocol bytes
+- `scripts/tcl_ir_analysis.py`: TCL112AC protocol analysis
+
+## Requirements
+- Python 3; `requirements.txt` pins the broadlink library range (not needed by `bl_send.py`)
+- Everything runs over the local network; no internet or cloud needed
+
+## Limitations
+- Only a TCL protocol example is included; other brands need their own protocol bytes
+- Only used with an RM4 Mini by the author
+- Command-line only
+
+## Docs
+- [README (English)](https://github.com/ythx-101/broadlink-remote/blob/main/README.md)
+- [SKILL.md (中文完整教程)](https://github.com/ythx-101/broadlink-remote/blob/main/SKILL.md)

@@ -3,7 +3,7 @@
 BroadLink AC Control Script
 Core control script for learning and sending IR signals.
 
-Usage (run on router):
+Usage (PC / Raspberry Pi with broadlink installed):
     python3 scripts/ac_control.py <command> [args]
 
 Commands:
@@ -65,10 +65,15 @@ def save_ir_codes(codes):
 
 
 def create_device():
-    """Create BroadLink device from saved info or defaults."""
+    """Create and authenticate a BroadLink device from saved info or defaults."""
     device_info = load_device()
-    device = broadlink.rm2(device_info["ip"], device_info["mac"])
-    device.devtype = device_info.get("devtype", 0x5a36)
+    ip = device_info["ip"]
+    if isinstance(ip, (list, tuple)):
+        ip = ip[0]
+    mac = bytes.fromhex(device_info["mac"])
+    devtype = device_info.get("devtype", 0x520c)  # default: RM4 Mini
+    device = broadlink.gendevice(devtype, (ip, 80), mac)
+    device.auth()
     return device
 
 
@@ -85,18 +90,18 @@ def cmd_discover():
     for d in devices:
         try:
             d.auth()
-        except:
+        except Exception:
             pass
         
         device_info = {
-            "ip": d.host,
-            "mac": d.mac.hex() if hasattr(d.mac, 'hex') else d.mac.hex(),
+            "ip": d.host[0],
+            "mac": d.mac.hex(),
             "devtype": d.devtype,
             "name": getattr(d, 'name', 'BroadLink RM')
         }
         save_device(device_info)
         
-        print(f"[+] Found: {d.host} (MAC: {device_info['mac']}, Type: 0x{d.devtype:04x})")
+        print(f"[+] Found: {d.host[0]} (MAC: {device_info['mac']}, Type: 0x{d.devtype:04x})")
     
     return True
 
@@ -125,9 +130,9 @@ def cmd_learn(name):
         
         try:
             data = device.check_data()
-            if data and len(data) > 4:
-                # Extract IR data from response
-                ir_data = data[4:]
+            if data:
+                # broadlink >= 0.19 already returns the bare IR data
+                ir_data = data
                 
                 # Save the IR code
                 codes = load_ir_codes()
@@ -224,13 +229,7 @@ def cmd_ac(action, value=None):
         if signal in codes:
             return cmd_send(signal)
         
-        # Otherwise try to combine power + temp
         print(f"[*] Setting temperature to {temp}°C")
-        
-        # Try power_on + temp setting
-        if "temp_24" in codes:  # base temp
-            print(f"    (Using pre-learned temp_{temp} or generic temp)")
-        
         return cmd_send(signal)
     
     elif action == "mode":

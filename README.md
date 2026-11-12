@@ -11,6 +11,10 @@
 
 *No official app · Learn or calculate IR codes · Zero-dep sender for routers · OpenClaw ready*
 
+**broadlink-remote** is a set of Python CLI scripts to control air conditioners, TVs and other infrared devices through a BroadLink RM4 Mini — without the BroadLink app or cloud account. Set up WiFi, learn IR codes from your remote, or calculate codes from the protocol when learning fails; a zero-dependency sender runs on OpenWrt routers. Built for home-automation tinkerers and AI agents (OpenClaw).
+
+中文：BroadLink 博联 RM4 Mini 红外万能遥控脚本，无需官方 App 配网、学习/计算红外码、命令行控制空调电视，支持 OpenWrt 路由器和 AI agent。完整中文教程见 [SKILL.md](SKILL.md)。
+
 [Quick Start](#-quick-start) · [Two Ways to Get IR Codes](#-two-ways-to-get-ir-codes) · [How It Works](#-how-it-works) · [Story](#-story)
 
 </div>
@@ -26,7 +30,7 @@ AI:  I can't control physical devices.
 You: ...seriously?
 ```
 
-BroadLink sells a $8 IR blaster. But the official app is required for setup, and there's no clean CLI/API for agents.
+BroadLink sells an inexpensive IR blaster. But the official app is required for setup, and there's no clean CLI/API for agents.
 
 **broadlink-remote** solves this: script-only WiFi setup, IR learning, and protocol-based code calculation — all from the command line. No app, no cloud, no account.
 
@@ -82,7 +86,8 @@ Security modes: `0`=open, `1`=WEP, `2`=WPA1, `3`=WPA2, `4`=WPA1/2 (default)
 
 ```bash
 python3 scripts/discover.py
-# [+] Found: 192.168.1.xxx (MAC: xxxxxxxxxxxx, Type: 0x520c)
+# [+] Device authenticated: 192.168.1.xxx
+#     Device: devtype=0x520c, IP=192.168.1.xxx, MAC=xxxxxxxxxxxx
 ```
 
 #### Step 3: Get IR Codes
@@ -150,6 +155,8 @@ ON:  23 CB 26 01 00 24 41 02 05 00 00 00 80 01
 
 See [SKILL.md](SKILL.md) for full protocol documentation.
 
+Learned codes are stored in `data/ir_codes.json`; avoid committing your own codes.
+
 ## 🔧 How It Works
 
 ```
@@ -166,7 +173,16 @@ See [SKILL.md](SKILL.md) for full protocol documentation.
 | **Dependencies** | `pip install broadlink` | Only `openssl` CLI |
 | **Features** | Discover + Learn + Send | Send only |
 | **Best for** | PC / Raspberry Pi | OpenWrt router / embedded |
-| **Crypto** | Python cryptodome | openssl CLI (AES-128-CBC) |
+| **Crypto** | `cryptography` (via broadlink) | openssl CLI (AES-128-CBC) |
+
+## 🤔 When to Use / Alternatives
+
+| Option | Good for | Note |
+|---|---|---|
+| BroadLink official app | Phone control, cloud scenes | Requires app + account |
+| Home Assistant `broadlink` integration | Full smart-home dashboards | Needs a running HA instance |
+| python-broadlink library directly | Developers writing their own code | This repo is built on it |
+| **broadlink-remote** | Scripts, routers (OpenWrt), AI agents; codes that can't be learned | CLI only, AC-focused examples |
 
 ## 📦 Requirements
 
@@ -176,6 +192,7 @@ See [SKILL.md](SKILL.md) for full protocol documentation.
 | **WiFi setup** | `pip install broadlink` | — |
 | **IR learning** | `pip install broadlink` | Physical remote |
 | **IR sending** | Nothing (bl_send.py) | `broadlink` lib for ac_control.py |
+| **Pinned deps** | `pip install -r requirements.txt` | — |
 | **Protocol calc** | Nothing | [IRremoteESP8266](https://github.com/crankyoldgit/IRremoteESP8266) reference |
 
 ## 🗂️ File Structure
@@ -190,9 +207,44 @@ See [SKILL.md](SKILL.md) for full protocol documentation.
 │   ├── bl_send.py                # Zero-dep sender (openssl only)
 │   ├── ac.sh                     # SSH remote entry point
 │   ├── tcl_send.py               # TCL IR code generator
-│   └── tcl_ir_analysis.py        # TCL112AC protocol analysis (529 lines)
+│   └── tcl_ir_analysis.py        # TCL112AC protocol analysis
+├── tests/
+│   └── test_offline.py           # Offline tests (no device needed)
+├── requirements.txt              # Pinned broadlink range
+├── llms.txt                      # Summary for LLMs
 └── data/
     └── ir_codes.json             # IR code storage
+```
+
+## ❓ FAQ
+
+**Can I set up a BroadLink RM4 Mini without the BroadLink app?**
+Yes. `scripts/wifi_setup.py` uses `broadlink.setup` from python-broadlink to send your WiFi credentials while your computer is connected to the device's hotspot.
+
+**Which devices are supported?**
+`bl_send.py` recognizes the RM4 family devtypes listed in the script; other RM models use the RM2-style packet. The author has only used it with an RM4 Mini.
+
+**Why does learning fail for my AC's power-on code?**
+Some signals are too long or complex for the device to capture. Use Way 2 (calculate from the protocol) instead.
+
+**Does it work with brands other than TCL?**
+`encode_broadlink()` is generic, but you need to write the protocol bytes yourself, e.g. by following IRremoteESP8266. Only a TCL example is included.
+
+**Can it run on an OpenWrt router?**
+`bl_send.py` needs only `python3` and the `openssl` CLI. Copy the script, your codes file and the device IP to the router first.
+
+**Does it need internet access or a cloud account?**
+No. Everything talks to the device over your local network (UDP).
+
+**How do I use it with an AI agent / OpenClaw?**
+Call the scripts from the command line and check their exit codes; `scripts/ac.sh` runs the router-side sender over SSH.
+
+## 🧪 Tests
+
+Run offline tests (no device or network needed):
+
+```bash
+python3 -m unittest discover -s tests -v
 ```
 
 ## 📖 Story

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Send TCL AC IR codes based on Opus analysis"""
+"""Send TCL AC IR codes: candidate codes derived from the TCL112AC protocol"""
 import struct, sys
 
 MARK = 131
@@ -38,7 +38,7 @@ def make_packet(f1, f2):
         pulses = bytes_to_pulses(f2) + [MARK, GAP2]
     return encode_broadlink(pulses).hex()
 
-# Candidates from Opus analysis (TCL112AC protocol)
+# Candidate codes derived from the TCL112AC protocol
 candidates = [
     # #8 HIGH PRIORITY: Minimal change - just flip power bit in Frame2
     ("Minimal: F2 power bit ON (0x20→0x24), keep Heat/29C/HighFan",
@@ -80,6 +80,7 @@ candidates = [
      None,
      [0x23, 0xCB, 0x26, 0x01, 0x00, 0x04, 0x03, 0x05, 0x00, 0x00, 0x00, 0x00, 0x80, 0xA1]),
     
+    # NOTE: checksum does not match sum(bytes[0:13]); kept as-is for reference
     # Extra: with byte6 bit6 set (like user's OFF code had 0x41)
     ("Original F1 + Power ON/Cool/26C + byte6 bit6 set (0x43)",
      [0x23, 0xCB, 0x26, 0x02, 0x00, 0x40, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x25],
@@ -88,29 +89,31 @@ candidates = [
     # Extra: Heat mode ON (since OFF code was in Heat mode)  
     ("Original F1 + Power ON/Heat/29C/HighFan (match OFF state)",
      [0x23, 0xCB, 0x26, 0x02, 0x00, 0x40, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x25],
-     [0x23, 0xCB, 0x26, 0x01, 0x00, 0x24, 0x01, 0x02, 0x05, 0x00, 0x00, 0x00, 0x80, 0xFD+0x04 & 0xFF]),
+     [0x23, 0xCB, 0x26, 0x01, 0x00, 0x24, 0x01, 0x02, 0x05, 0x00, 0x00, 0x00, 0x80, 0xC1]),
 ]
 
-# Fix last checksum
-candidates[-1] = (
-    "Original F1 + Power ON/Heat/29C/HighFan (match OFF state)",
-    [0x23, 0xCB, 0x26, 0x02, 0x00, 0x40, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x25],
-    [0x23, 0xCB, 0x26, 0x01, 0x00, 0x24, 0x01, 0x02, 0x05, 0x00, 0x00, 0x00, 0x80, 0x00])
-# Recalc checksum
-f2 = list(candidates[-1][2])
-f2[13] = sum(f2[:13]) & 0xFF
-candidates[-1] = (candidates[-1][0], candidates[-1][1], f2)
 
-idx = int(sys.argv[1]) if len(sys.argv) > 1 else -1
+def main():
+    idx = int(sys.argv[1]) if len(sys.argv) > 1 else -1
 
-if idx == -1:
-    for i, (desc, f1, f2) in enumerate(candidates):
-        print(f"#{i}: {desc}")
-    print(f"\nTotal: {len(candidates)}")
-else:
+    if idx == -1:
+        for i, (desc, f1, f2) in enumerate(candidates):
+            print(f"#{i}: {desc}")
+        print(f"\nTotal: {len(candidates)}")
+        return 0
+
+    if not 0 <= idx < len(candidates):
+        print(f"Invalid candidate #{idx}. Valid: 0-{len(candidates) - 1}")
+        return 1
+
     desc, f1, f2 = candidates[idx]
     print(f"#{idx}: {desc}")
     if f1:
         print(f"F1: {' '.join(f'{b:02X}' for b in f1)}")
     print(f"F2: {' '.join(f'{b:02X}' for b in f2)}")
     print(make_packet(f1, f2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
